@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
 import { useSession } from "../../src/auth/session";
 import { apiService } from "../../src/services/apiService";
+import { formatUtcDateTimeToLocal } from "../../src/utils/date";
 import { ui } from "../../src/ui/styles";
 
 type Row = { provider: string; datetime: string; repeat: string };
@@ -13,18 +14,6 @@ export default function PortalAppointments() {
   const [scheduleRows, setScheduleRows] = useState<Row[]>([]);
   const [providerRows, setProviderRows] = useState<Row[]>([]);
   const [activeTab, setActiveTab] = useState<TabKey>("schedule");
-
-  const formatAppointmentDateTime = (value: string) => {
-    const date = new Date(value);
-    return date.toLocaleString(undefined, {
-      year: "numeric",
-      month: "numeric",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-  };
 
   const formatRepeatLabel = (value: string) => {
     const normalized = value.trim().toLowerCase();
@@ -80,7 +69,7 @@ export default function PortalAppointments() {
               <View key={`${item.provider}-${item.datetime}-${index}`} style={[ui.card, ui.elevatedCard]}>
                 <View style={ui.appointmentRow}>
                   <Text style={ui.appointmentProviderText}>{item.provider}</Text>
-                  <Text style={ui.appointmentDateText}>{formatAppointmentDateTime(item.datetime)}</Text>
+                  <Text style={ui.appointmentDateText}>{formatUtcDateTimeToLocal(item.datetime)}</Text>
                 </View>
               </View>
             ))}
@@ -91,7 +80,7 @@ export default function PortalAppointments() {
             {providerRows.map((provider) => (
               <View key={`${provider.provider}-${provider.datetime}`} style={[ui.card, ui.elevatedCard]}>
                 <Text style={ui.subheading}>{provider.provider}</Text>
-                <Text>Start Date and Time: {formatAppointmentDateTime(provider.datetime)}</Text>
+                <Text>Start Date and Time: {formatUtcDateTimeToLocal(provider.datetime)}</Text>
                 <Text>Frequency: {formatRepeatLabel(provider.repeat)}</Text>
               </View>
             ))}

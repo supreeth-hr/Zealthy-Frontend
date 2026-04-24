@@ -3,22 +3,10 @@ import { useEffect, useState } from "react";
 import { Alert, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
 import { useSession } from "../../src/auth/session";
 import { apiService } from "../../src/services/apiService";
-import { formatDate, isWithinNextSevenDays } from "../../src/utils/date";
+import { formatDate, formatUtcDateTimeToLocal, isWithinNextSevenDays } from "../../src/utils/date";
 import { ui } from "../../src/ui/styles";
 
 export default function PortalHome() {
-  const formatAppointmentDateTime = (value: string) => {
-    const date = new Date(value);
-    return date.toLocaleString(undefined, {
-      year: "numeric",
-      month: "numeric",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-  };
-
   const { user, token, logout } = useSession();
   const confirmLogout = () => {
     Alert.alert("Confirm Logout", "Are you sure you want to logout?", [
@@ -76,7 +64,7 @@ export default function PortalHome() {
           {appointments.slice(0, 3).map((item, index, rows) => (
             <View key={`${item.provider}-${item.datetime}-${index}`} style={[ui.appointmentRow, index < rows.length - 1 && ui.rowDivider]}>
               <Text style={ui.appointmentProviderText}>{item.provider}</Text>
-              <Text style={ui.appointmentDateText}>{formatAppointmentDateTime(item.datetime)}</Text>
+              <Text style={ui.appointmentDateText}>{formatUtcDateTimeToLocal(item.datetime)}</Text>
             </View>
           ))}
           {!appointments.length && <Text style={ui.emptyStateText}>No upcoming appointments</Text>}
