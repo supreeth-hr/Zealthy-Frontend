@@ -15,6 +15,7 @@ import {
   View,
 } from "react-native";
 import { apiService } from "../../../../src/services/apiService";
+import { formatUtcDateTimeToLocal, localDateTimeFieldsToUtcIso, utcDateTimeToLocalFields } from "../../../../src/utils/date";
 import { ui } from "../../../../src/ui/styles";
 
 type ScheduleRow = { provider: string; datetime: string; repeat: string };
@@ -64,46 +65,10 @@ export default function PatientAppointmentsScreen() {
     { label: "None", value: "none" },
   ];
 
-  const formatAppointmentDateTime = (value: string) => {
-    const date = new Date(value);
-    return date.toLocaleString(undefined, {
-      year: "numeric",
-      month: "numeric",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-  };
-
   const formatRepeatLabel = (value: string) => {
     const normalized = value.trim().toLowerCase();
     if (!normalized) return "";
     return normalized.charAt(0).toUpperCase() + normalized.slice(1);
-  };
-
-  const parseDateAndTime = (date: string, time: string) => {
-    const dateMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date.trim());
-    const timeMatch = /^(\d{2}):(\d{2})$/.exec(time.trim());
-    if (!dateMatch || !timeMatch) return null;
-    const year = Number(dateMatch[1]);
-    const month = Number(dateMatch[2]);
-    const day = Number(dateMatch[3]);
-    const hour = Number(timeMatch[1]);
-    const minute = Number(timeMatch[2]);
-    if (month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minute > 59) return null;
-    return new Date(Date.UTC(year, month - 1, day, hour, minute, 0)).toISOString();
-  };
-
-  const toDateAndTimeFields = (value: string) => {
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return { date: "", time: "" };
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const hour = String(date.getHours()).padStart(2, "0");
-    const minute = String(date.getMinutes()).padStart(2, "0");
-    return { date: `${year}-${month}-${day}`, time: `${hour}:${minute}` };
   };
 
   const load = useCallback(async () => {
@@ -163,7 +128,7 @@ export default function PatientAppointmentsScreen() {
       setFormError("All fields are required.");
       return;
     }
-    const datetimeIso = parseDateAndTime(date, time);
+    const datetimeIso = localDateTimeFieldsToUtcIso(date, time);
     if (!datetimeIso) {
       setFormError("Enter a valid date (YYYY-MM-DD) and time (HH:mm).");
       return;
@@ -193,7 +158,7 @@ export default function PatientAppointmentsScreen() {
   };
 
   const openUpdateModal = (appointment: ProviderRow) => {
-    const parsed = toDateAndTimeFields(appointment.datetime);
+    const parsed = utcDateTimeToLocalFields(appointment.datetime);
     setEditingAppointmentId(appointment.id);
     setUpdateProviderName(appointment.provider);
     setUpdateDateValue(parsed.date);
@@ -224,7 +189,7 @@ export default function PatientAppointmentsScreen() {
       setUpdateFormError("All fields are required.");
       return;
     }
-    const datetimeIso = parseDateAndTime(updateDateValue, updateTimeValue);
+    const datetimeIso = localDateTimeFieldsToUtcIso(updateDateValue, updateTimeValue);
     if (!datetimeIso) {
       setUpdateFormError("Enter a valid date (YYYY-MM-DD) and time (HH:mm).");
       return;
@@ -303,7 +268,7 @@ export default function PatientAppointmentsScreen() {
               <View key={`${item.provider}-${item.datetime}-${index}`} style={[ui.card, ui.elevatedCard]}>
                 <View style={ui.appointmentRow}>
                   <Text style={ui.appointmentProviderText}>{item.provider}</Text>
-                  <Text style={ui.appointmentDateText}>{formatAppointmentDateTime(item.datetime)}</Text>
+                  <Text style={ui.appointmentDateText}>{formatUtcDateTimeToLocal(item.datetime)}</Text>
                 </View>
               </View>
             ))}
@@ -319,7 +284,7 @@ export default function PatientAppointmentsScreen() {
                 <View style={ui.providerCardRow}>
                   <View style={ui.providerCardContent}>
                     <Text style={ui.subheading}>{provider.provider}</Text>
-                    <Text>Start Date and Time: {formatAppointmentDateTime(provider.datetime)}</Text>
+                    <Text>Start Date and Time: {formatUtcDateTimeToLocal(provider.datetime)}</Text>
                     <Text>Frequency: {formatRepeatLabel(provider.repeat)}</Text>
                   </View>
                   <View style={ui.providerCardActions}>

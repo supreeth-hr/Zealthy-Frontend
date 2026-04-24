@@ -65,6 +65,58 @@ export const expandRecurringDates = (startIsoDate: string, repeat: Frequency) =>
 };
 
 export const formatDateTime = (value: string) => new Date(value).toLocaleString();
+const hasTimezoneSuffix = (value: string) => /(?:Z|[+-]\d{2}:?\d{2})$/i.test(value);
+const dateFieldPattern = /^(\d{4})-(\d{2})-(\d{2})$/;
+const timeFieldPattern = /^(\d{2}):(\d{2})$/;
+
+export const formatUtcDateTimeToLocal = (value: string) => {
+  const normalized = value.trim();
+  if (!normalized) return "";
+  const utcLikeValue = hasTimezoneSuffix(normalized) ? normalized : `${normalized}Z`;
+  const date = new Date(utcLikeValue);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString(undefined, {
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
+
+export const localDateTimeFieldsToUtcIso = (dateField: string, timeField: string) => {
+  const dateMatch = dateFieldPattern.exec(dateField.trim());
+  const timeMatch = timeFieldPattern.exec(timeField.trim());
+  if (!dateMatch || !timeMatch) return null;
+
+  const year = Number(dateMatch[1]);
+  const month = Number(dateMatch[2]);
+  const day = Number(dateMatch[3]);
+  const hour = Number(timeMatch[1]);
+  const minute = Number(timeMatch[2]);
+  if (month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minute > 59) return null;
+
+  const localDate = new Date(year, month - 1, day, hour, minute, 0);
+  if (Number.isNaN(localDate.getTime())) return null;
+  return localDate.toISOString();
+};
+
+export const utcDateTimeToLocalFields = (value: string) => {
+  const normalized = value.trim();
+  if (!normalized) return { date: "", time: "" };
+  const utcLikeValue = hasTimezoneSuffix(normalized) ? normalized : `${normalized}Z`;
+  const date = new Date(utcLikeValue);
+  if (Number.isNaN(date.getTime())) return { date: "", time: "" };
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hour = String(date.getHours()).padStart(2, "0");
+  const minute = String(date.getMinutes()).padStart(2, "0");
+  return { date: `${year}-${month}-${day}`, time: `${hour}:${minute}` };
+};
+
 export const formatDate = (value: string) => {
   // Treat YYYY-MM-DD as a calendar date, not a timezone-shifted timestamp.
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
