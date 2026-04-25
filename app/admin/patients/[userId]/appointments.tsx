@@ -326,7 +326,7 @@ export default function PatientAppointmentsScreen() {
             <Text style={ui.label}>Time</Text>
             <TextInput
               style={ui.input}
-              placeholder="HH:mm"
+              placeholder="HH:mm (24-Hour Format)"
               value={timeValue}
               onChangeText={setTimeValue}
               editable={!submitting}
@@ -423,7 +423,7 @@ export default function PatientAppointmentsScreen() {
             <Text style={ui.label}>Time</Text>
             <TextInput
               style={ui.input}
-              placeholder="HH:mm"
+              placeholder="HH:mm (24-Hour Format)"
               value={updateTimeValue}
               onChangeText={setUpdateTimeValue}
               editable={!updateSubmitting}
