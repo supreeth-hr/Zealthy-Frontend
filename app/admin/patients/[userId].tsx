@@ -1,7 +1,6 @@
 import { Link, Stack, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -16,6 +15,7 @@ import {
 import { apiService } from "../../../src/services/apiService";
 import { SessionUser } from "../../../src/services/types";
 import { ui } from "../../../src/ui/styles";
+import { useNotifications } from "../../../src/ui/notifications/NotificationsProvider";
 
 export default function PatientRecordScreen() {
   const params = useLocalSearchParams<{ userId: string }>();
@@ -30,6 +30,7 @@ export default function PatientRecordScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordFormError, setPasswordFormError] = useState("");
   const [passwordSaving, setPasswordSaving] = useState(false);
+  const { notifySuccess } = useNotifications();
 
   const load = async () => {
     try {
@@ -101,7 +102,7 @@ export default function PatientRecordScreen() {
       const updated = await apiService.updatePatientPassword(userId, { password: next });
       setPatient(updated);
       setError("");
-      Alert.alert("Success!", "Password updated.");
+      notifySuccess("Password updated.");
       setPasswordModalVisible(false);
       setNewPassword("");
       setConfirmPassword("");
@@ -139,7 +140,7 @@ export default function PatientRecordScreen() {
       setPatient(updated);
       setError("");
       setUpdatePatientError("");
-      Alert.alert("Success!", "Patient Information updated.");
+      notifySuccess("Patient information updated.");
     } catch (err) {
       setUpdatePatientError(err instanceof Error ? err.message : "Failed to update patient");
     }

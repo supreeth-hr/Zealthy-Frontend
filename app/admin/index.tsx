@@ -1,9 +1,10 @@
 import { Link, Stack, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { Alert, Modal, Pressable, SafeAreaView, ScrollView, Text, TextInput, View } from "react-native";
+import { Modal, Pressable, SafeAreaView, ScrollView, Text, TextInput, View } from "react-native";
 import { apiService } from "../../src/services/apiService";
 import { SessionUser } from "../../src/services/types";
 import { ui } from "../../src/ui/styles";
+import { useNotifications } from "../../src/ui/notifications/NotificationsProvider";
 
 export default function AdminPatients() {
   const [patients, setPatients] = useState<SessionUser[]>([]);
@@ -14,6 +15,7 @@ export default function AdminPatients() {
   const [createPassword, setCreatePassword] = useState("");
   const [createError, setCreateError] = useState("");
   const [createSubmitting, setCreateSubmitting] = useState(false);
+  const { notifySuccess } = useNotifications();
 
   const resetCreateForm = () => {
     setCreateName("");
@@ -87,7 +89,7 @@ export default function AdminPatients() {
       await load();
       setCreateModalOpen(false);
       resetCreateForm();
-      Alert.alert("Success!", "Successfully added a Patient");
+      notifySuccess("Successfully added a patient.");
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : "Failed to create patient");
     } finally {

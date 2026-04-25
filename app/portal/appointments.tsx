@@ -1,12 +1,15 @@
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
+import { SafeAreaView, ScrollView, Text, View } from "react-native";
+import { TabSwitchRow } from "../../src/components/TabSwitchRow";
 import { useSession } from "../../src/auth/session";
+import { AppointmentListItem } from "../../src/services/api/types";
 import { apiService } from "../../src/services/apiService";
 import { formatUtcDateTimeToLocal } from "../../src/utils/date";
+import { formatTitleCaseLabel } from "../../src/utils/format";
 import { ui } from "../../src/ui/styles";
 
-type Row = { provider: string; datetime: string; repeat: string };
+type Row = AppointmentListItem;
 type TabKey = "schedule" | "providers";
 
 export default function PortalAppointments() {
@@ -14,12 +17,6 @@ export default function PortalAppointments() {
   const [scheduleRows, setScheduleRows] = useState<Row[]>([]);
   const [providerRows, setProviderRows] = useState<Row[]>([]);
   const [activeTab, setActiveTab] = useState<TabKey>("schedule");
-
-  const formatRepeatLabel = (value: string) => {
-    const normalized = value.trim().toLowerCase();
-    if (!normalized) return "";
-    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
-  };
 
   useEffect(() => {
     if (!user) {
@@ -46,20 +43,14 @@ export default function PortalAppointments() {
   return (
     <SafeAreaView style={ui.screen}>
       <View style={ui.container}>
-        <View style={ui.tabRow}>
-          <Pressable
-            style={[ui.tabButton, activeTab === "schedule" ? ui.tabButtonActive : ui.tabButtonInactive]}
-            onPress={() => setActiveTab("schedule")}
-          >
-            <Text style={activeTab === "schedule" ? ui.tabLabelActive : ui.tabLabelInactive}>Upcoming Schedule</Text>
-          </Pressable>
-          <Pressable
-            style={[ui.tabButton, activeTab === "providers" ? ui.tabButtonActive : ui.tabButtonInactive]}
-            onPress={() => setActiveTab("providers")}
-          >
-            <Text style={activeTab === "providers" ? ui.tabLabelActive : ui.tabLabelInactive}>My Providers</Text>
-          </Pressable>
-        </View>
+        <TabSwitchRow
+          activeTab={activeTab}
+          onSelect={setActiveTab}
+          options={[
+            { key: "schedule", label: "Upcoming Schedule" },
+            { key: "providers", label: "My Providers" },
+          ]}
+        />
       </View>
 
       <ScrollView contentContainerStyle={ui.container}>
@@ -81,7 +72,7 @@ export default function PortalAppointments() {
               <View key={`${provider.provider}-${provider.datetime}`} style={[ui.card, ui.elevatedCard]}>
                 <Text style={ui.subheading}>{provider.provider}</Text>
                 <Text>Start Date and Time: {formatUtcDateTimeToLocal(provider.datetime)}</Text>
-                <Text>Frequency: {formatRepeatLabel(provider.repeat)}</Text>
+                <Text>Frequency: {formatTitleCaseLabel(provider.repeat)}</Text>
               </View>
             ))}
             {!providerRows.length && <Text style={ui.emptyStateText}>No providers found</Text>}

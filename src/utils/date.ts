@@ -118,10 +118,16 @@ export const utcDateTimeToLocalFields = (value: string) => {
 };
 
 export const formatDate = (value: string) => {
-  // Treat YYYY-MM-DD as a calendar date, not a timezone-shifted timestamp.
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    const [year, month, day] = value.split("-").map(Number);
+  const normalized = value.trim();
+
+  // Treat ISO-like date values as calendar dates, not timezone-shifted timestamps.
+  // This prevents UTC-midnight values (e.g. 2026-04-26T00:00:00Z) from rendering as the prior day.
+  const isoDatePrefix = /^(\d{4})-(\d{2})-(\d{2})(?:$|T)/.exec(normalized);
+  if (isoDatePrefix) {
+    const year = Number(isoDatePrefix[1]);
+    const month = Number(isoDatePrefix[2]);
+    const day = Number(isoDatePrefix[3]);
     return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString(undefined, { timeZone: "UTC" });
   }
-  return new Date(value).toLocaleDateString();
+  return new Date(normalized).toLocaleDateString();
 };

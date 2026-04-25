@@ -1,15 +1,16 @@
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
+import { Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
 import { useSession } from "../../src/auth/session";
 import { apiService } from "../../src/services/apiService";
 import { formatDate, formatUtcDateTimeToLocal, isWithinNextSevenDays } from "../../src/utils/date";
 import { ui } from "../../src/ui/styles";
+import { crossPlatformAlert } from "../../src/ui/notifications/alert";
 
 export default function PortalHome() {
   const { user, token, logout } = useSession();
   const confirmLogout = () => {
-    Alert.alert("Confirm Logout", "Are you sure you want to logout?", [
+    crossPlatformAlert("Confirm Logout", "Are you sure you want to logout?", [
       { text: "Cancel", style: "cancel" },
       { text: "Logout", style: "destructive", onPress: logout },
     ]);

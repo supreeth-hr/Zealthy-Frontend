@@ -1,7 +1,6 @@
 import { Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-  Alert,
   Image,
   KeyboardAvoidingView,
   Modal,
@@ -14,21 +13,21 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { TabSwitchRow } from "../../../../src/components/TabSwitchRow";
+import { appointmentRepeatOptions } from "../../../../src/features/admin/constants";
 import { apiService } from "../../../../src/services/apiService";
+import { AdminAppointmentRow, AppointmentListItem } from "../../../../src/services/api/types";
+import { Frequency } from "../../../../src/services/types";
 import { formatUtcDateTimeToLocal, localDateTimeFieldsToUtcIso, utcDateTimeToLocalFields } from "../../../../src/utils/date";
+import { formatTitleCaseLabel } from "../../../../src/utils/format";
 import { ui } from "../../../../src/ui/styles";
+import { crossPlatformAlert } from "../../../../src/ui/notifications/alert";
+import { useNotifications } from "../../../../src/ui/notifications/NotificationsProvider";
 
-type ScheduleRow = { provider: string; datetime: string; repeat: string };
-type ProviderRow = {
-  id: number;
-  user_id: number;
-  provider: string;
-  datetime: string;
-  repeat: string;
-  created_at: string;
-};
+type ScheduleRow = AppointmentListItem;
+type ProviderRow = AdminAppointmentRow;
 type TabKey = "schedule" | "providers";
-type RepeatOption = "daily" | "weekly" | "monthly" | "yearly" | "none";
+type RepeatOption = Frequency;
 
 export default function PatientAppointmentsScreen() {
   const { userId } = useLocalSearchParams<{ userId: string }>();
@@ -56,20 +55,9 @@ export default function PatientAppointmentsScreen() {
   const [updateFormError, setUpdateFormError] = useState("");
   const [updateSubmitting, setUpdateSubmitting] = useState(false);
   const [actionBusyId, setActionBusyId] = useState<number | null>(null);
+  const { notifySuccess } = useNotifications();
 
-  const repeatOptions: Array<{ label: string; value: RepeatOption }> = [
-    { label: "Daily", value: "daily" },
-    { label: "Weekly", value: "weekly" },
-    { label: "Monthly", value: "monthly" },
-    { label: "Yearly", value: "yearly" },
-    { label: "None", value: "none" },
-  ];
-
-  const formatRepeatLabel = (value: string) => {
-    const normalized = value.trim().toLowerCase();
-    if (!normalized) return "";
-    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
-  };
+  const repeatOptions = appointmentRepeatOptions as Array<{ label: string; value: RepeatOption }>;
 
   const load = useCallback(async () => {
     if (!Number.isFinite(targetUserId)) {
@@ -149,7 +137,7 @@ export default function PatientAppointmentsScreen() {
       setRepeatValue("");
       setShowRepeatOptions(false);
       await load();
-      Alert.alert("Success!", "Appointment added successfully.");
+      notifySuccess("Appointment added successfully.");
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Failed to add appointment.");
     } finally {
@@ -204,7 +192,7 @@ export default function PatientAppointmentsScreen() {
       });
       closeUpdateModal();
       await load();
-      Alert.alert("Success!", "Appointment updated successfully.");
+      notifySuccess("Appointment updated successfully.");
     } catch (err) {
       setUpdateFormError(err instanceof Error ? err.message : "Failed to update appointment.");
     } finally {
@@ -213,7 +201,7 @@ export default function PatientAppointmentsScreen() {
   };
 
   const handleDeleteAppointment = (appointment: ProviderRow) => {
-    Alert.alert(
+    crossPlatformAlert(
       "Delete Appointment",
       `Are you sure you want to delete ${appointment.provider} for this patient?`,
       [
@@ -243,20 +231,14 @@ export default function PatientAppointmentsScreen() {
       <Stack.Screen options={{ headerBackTitle: "Back" }} />
       <View style={ui.container}>
         {!!error && <Text style={{ color: "#B42318" }}>{error}</Text>}
-        <View style={ui.tabRow}>
-          <Pressable
-            style={[ui.tabButton, activeTab === "schedule" ? ui.tabButtonActive : ui.tabButtonInactive]}
-            onPress={() => setActiveTab("schedule")}
-          >
-            <Text style={activeTab === "schedule" ? ui.tabLabelActive : ui.tabLabelInactive}>Upcoming Schedule</Text>
-          </Pressable>
-          <Pressable
-            style={[ui.tabButton, activeTab === "providers" ? ui.tabButtonActive : ui.tabButtonInactive]}
-            onPress={() => setActiveTab("providers")}
-          >
-            <Text style={activeTab === "providers" ? ui.tabLabelActive : ui.tabLabelInactive}>My Providers</Text>
-          </Pressable>
-        </View>
+        <TabSwitchRow
+          activeTab={activeTab}
+          onSelect={setActiveTab}
+          options={[
+            { key: "schedule", label: "Upcoming Schedule" },
+            { key: "providers", label: "My Providers" },
+          ]}
+        />
       </View>
 
       <ScrollView contentContainerStyle={ui.container}>
@@ -285,7 +267,7 @@ export default function PatientAppointmentsScreen() {
                   <View style={ui.providerCardContent}>
                     <Text style={ui.subheading}>{provider.provider}</Text>
                     <Text>Start Date and Time: {formatUtcDateTimeToLocal(provider.datetime)}</Text>
-                    <Text>Frequency: {formatRepeatLabel(provider.repeat)}</Text>
+                    <Text>Frequency: {formatTitleCaseLabel(provider.repeat)}</Text>
                   </View>
                   <View style={ui.providerCardActions}>
                     <Pressable

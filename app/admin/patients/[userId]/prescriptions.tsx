@@ -1,7 +1,6 @@
 import { Stack, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
 import {
-  Alert,
   Image,
   KeyboardAvoidingView,
   Modal,
@@ -14,23 +13,26 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { TabSwitchRow } from "../../../../src/components/TabSwitchRow";
+import {
+  dosageOptions,
+  medicationOptions,
+  prescriptionFrequencyOptions,
+} from "../../../../src/features/admin/constants";
 import { apiService } from "../../../../src/services/apiService";
+import { PrescriptionRow, PrescriptionTimelineItem } from "../../../../src/services/api/types";
+import { Frequency } from "../../../../src/services/types";
 import { formatDate } from "../../../../src/utils/date";
+import { formatTitleCaseLabel } from "../../../../src/utils/format";
 import { ui } from "../../../../src/ui/styles";
+import { isValidIsoDateOnly } from "../../../../src/utils/validation";
+import { crossPlatformAlert } from "../../../../src/ui/notifications/alert";
+import { useNotifications } from "../../../../src/ui/notifications/NotificationsProvider";
 
-type TimelineRow = { medication: string; dosage: string; quantity: number; refill_on: string; schedule: string };
-type MedicationRow = {
-  id: number;
-  user_id: number;
-  medication: string;
-  dosage: string;
-  quantity: number;
-  refill_on: string;
-  refill_schedule: string;
-  created_at: string;
-};
+type TimelineRow = PrescriptionTimelineItem;
+type MedicationRow = PrescriptionRow;
 type TabKey = "timeline" | "medications";
-type FrequencyOption = "daily" | "weekly" | "monthly" | "yearly" | "none";
+type FrequencyOption = Frequency;
 
 export default function PatientPrescriptionsScreen() {
   const { userId } = useLocalSearchParams<{ userId: string }>();
@@ -66,22 +68,9 @@ export default function PatientPrescriptionsScreen() {
   const [showUpdateFrequencyOptions, setShowUpdateFrequencyOptions] = useState(false);
   const [updateError, setUpdateError] = useState("");
   const [updateSubmitting, setUpdateSubmitting] = useState(false);
+  const { notifySuccess } = useNotifications();
 
-  const medicationOptions = ["Diovan", "Lexapro", "Metformin", "Ozempic", "Prozac", "Seroquel", "Tegretol"];
-  const dosageOptions = ["1mg", "2mg", "3mg", "5mg", "10mg", "25mg", "50mg", "100mg", "250mg", "500mg", "1000mg"];
-  const frequencyOptions: Array<{ label: string; value: FrequencyOption }> = [
-    { label: "Daily", value: "daily" },
-    { label: "Weekly", value: "weekly" },
-    { label: "Monthly", value: "monthly" },
-    { label: "Yearly", value: "yearly" },
-    { label: "None", value: "none" },
-  ];
-
-  const formatFrequencyLabel = (value: string) => {
-    const normalized = value.trim().toLowerCase();
-    if (!normalized) return "";
-    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
-  };
+  const frequencyOptions = prescriptionFrequencyOptions as Array<{ label: string; value: FrequencyOption }>;
 
   const load = useCallback(async () => {
     if (!Number.isFinite(targetUserId)) {
@@ -110,22 +99,6 @@ export default function PatientPrescriptionsScreen() {
       load();
     }, [load])
   );
-
-  const isValidDate = (value: string) => {
-    const trimmed = value.trim();
-    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
-    if (!match) return false;
-    const year = Number(match[1]);
-    const month = Number(match[2]);
-    const day = Number(match[3]);
-    if (month < 1 || month > 12 || day < 1 || day > 31) return false;
-    const date = new Date(Date.UTC(year, month - 1, day));
-    return (
-      date.getUTCFullYear() === year &&
-      date.getUTCMonth() === month - 1 &&
-      date.getUTCDate() === day
-    );
-  };
 
   const openCreateModal = () => {
     setCreateMedication("");
@@ -159,7 +132,7 @@ export default function PatientPrescriptionsScreen() {
       setCreateError("Quantity must be a number greater than 0.");
       return;
     }
-    if (!isValidDate(createRefillOn)) {
+    if (!isValidIsoDateOnly(createRefillOn)) {
       setCreateError("Refill on must be in YYYY-MM-DD format.");
       return;
     }
@@ -175,7 +148,7 @@ export default function PatientPrescriptionsScreen() {
         refill_schedule: createFrequency,
       });
       setShowCreateModal(false);
-      Alert.alert("Success!", "Prescription added successfully.");
+      notifySuccess("Prescription added successfully.");
       await load();
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : "Failed to create prescription.");
@@ -220,7 +193,7 @@ export default function PatientPrescriptionsScreen() {
       setUpdateError("Quantity must be a number greater than 0.");
       return;
     }
-    if (!isValidDate(updateRefillOn)) {
+    if (!isValidIsoDateOnly(updateRefillOn)) {
       setUpdateError("Refill on must be in YYYY-MM-DD format.");
       return;
     }
@@ -237,7 +210,7 @@ export default function PatientPrescriptionsScreen() {
       });
       closeUpdateModal();
       await load();
-      Alert.alert("Success!", "Prescription updated successfully.");
+      notifySuccess("Prescription updated successfully.");
     } catch (err) {
       setUpdateError(err instanceof Error ? err.message : "Failed to update prescription.");
     } finally {
@@ -246,7 +219,7 @@ export default function PatientPrescriptionsScreen() {
   };
 
   const confirmDeletePrescription = (item: MedicationRow) => {
-    Alert.alert(
+    crossPlatformAlert(
       "Delete",
       `Delete prescription ${item.medication} (${item.dosage})?`,
       [
@@ -276,20 +249,14 @@ export default function PatientPrescriptionsScreen() {
       <Stack.Screen options={{ headerBackTitle: "Back" }} />
       <View style={ui.container}>
         {!!error && <Text style={{ color: "#B42318" }}>{error}</Text>}
-        <View style={ui.tabRow}>
-          <Pressable
-            style={[ui.tabButton, activeTab === "timeline" ? ui.tabButtonActive : ui.tabButtonInactive]}
-            onPress={() => setActiveTab("timeline")}
-          >
-            <Text style={activeTab === "timeline" ? ui.tabLabelActive : ui.tabLabelInactive}>Refill Timeline</Text>
-          </Pressable>
-          <Pressable
-            style={[ui.tabButton, activeTab === "medications" ? ui.tabButtonActive : ui.tabButtonInactive]}
-            onPress={() => setActiveTab("medications")}
-          >
-            <Text style={activeTab === "medications" ? ui.tabLabelActive : ui.tabLabelInactive}>My Medications</Text>
-          </Pressable>
-        </View>
+        <TabSwitchRow
+          activeTab={activeTab}
+          onSelect={setActiveTab}
+          options={[
+            { key: "timeline", label: "Refill Timeline" },
+            { key: "medications", label: "My Medications" },
+          ]}
+        />
       </View>
 
       <ScrollView contentContainerStyle={ui.container}>
@@ -325,7 +292,7 @@ export default function PatientPrescriptionsScreen() {
                     <Text style={ui.medicationDetailText}>Dosage: {item.dosage}</Text>
                     <Text style={ui.medicationDetailText}>Quantity: {item.quantity}</Text>
                     <Text style={ui.medicationDetailText}>Start date: {formatDate(item.refill_on)}</Text>
-                    <Text style={ui.medicationDetailText}>Frequency: {formatFrequencyLabel(item.refill_schedule)}</Text>
+                    <Text style={ui.medicationDetailText}>Frequency: {formatTitleCaseLabel(item.refill_schedule)}</Text>
                   </View>
                   <View style={ui.providerCardActions}>
                     <Pressable

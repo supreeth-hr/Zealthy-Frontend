@@ -81,7 +81,7 @@ export default function LoginScreen() {
 
         <Link href="/admin" asChild>
           <Pressable style={ui.visitAdminButton}>
-            <Text style={[ui.secondaryText, ui.secondaryTextLarge]}>Visit Admin</Text>
+            <Text style={[ui.secondaryText, ui.secondaryTextLarge]}>Admin Dashboard</Text>
           </Pressable>
         </Link>
       </View>

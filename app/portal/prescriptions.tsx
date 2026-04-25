@@ -1,13 +1,16 @@
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
+import { SafeAreaView, ScrollView, Text, View } from "react-native";
+import { TabSwitchRow } from "../../src/components/TabSwitchRow";
 import { useSession } from "../../src/auth/session";
+import { PortalPrescriptionRow, PrescriptionTimelineItem } from "../../src/services/api/types";
 import { apiService } from "../../src/services/apiService";
 import { formatDate } from "../../src/utils/date";
+import { formatTitleCaseLabel } from "../../src/utils/format";
 import { ui } from "../../src/ui/styles";
 
-type TimelineRow = { medication: string; dosage: string; quantity: number; refill_on: string; schedule: string };
-type MedicationRow = { medication: string; dosage: string; quantity: number; refill_on: string; refill_schedule: string };
+type TimelineRow = PrescriptionTimelineItem;
+type MedicationRow = PortalPrescriptionRow;
 type TabKey = "timeline" | "medications";
 
 export default function PortalPrescriptions() {
@@ -15,12 +18,6 @@ export default function PortalPrescriptions() {
   const [timelineRows, setTimelineRows] = useState<TimelineRow[]>([]);
   const [medicationRows, setMedicationRows] = useState<MedicationRow[]>([]);
   const [activeTab, setActiveTab] = useState<TabKey>("timeline");
-
-  const formatFrequencyLabel = (value: string) => {
-    const normalized = value.trim().toLowerCase();
-    if (!normalized) return "";
-    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
-  };
 
   useEffect(() => {
     if (!user) {
@@ -47,20 +44,14 @@ export default function PortalPrescriptions() {
   return (
     <SafeAreaView style={ui.screen}>
       <View style={ui.container}>
-        <View style={ui.tabRow}>
-          <Pressable
-            style={[ui.tabButton, activeTab === "timeline" ? ui.tabButtonActive : ui.tabButtonInactive]}
-            onPress={() => setActiveTab("timeline")}
-          >
-            <Text style={activeTab === "timeline" ? ui.tabLabelActive : ui.tabLabelInactive}>Refill Timeline</Text>
-          </Pressable>
-          <Pressable
-            style={[ui.tabButton, activeTab === "medications" ? ui.tabButtonActive : ui.tabButtonInactive]}
-            onPress={() => setActiveTab("medications")}
-          >
-            <Text style={activeTab === "medications" ? ui.tabLabelActive : ui.tabLabelInactive}>My Medications</Text>
-          </Pressable>
-        </View>
+        <TabSwitchRow
+          activeTab={activeTab}
+          onSelect={setActiveTab}
+          options={[
+            { key: "timeline", label: "Refill Timeline" },
+            { key: "medications", label: "My Medications" },
+          ]}
+        />
       </View>
 
       <ScrollView contentContainerStyle={ui.container}>
@@ -89,7 +80,7 @@ export default function PortalPrescriptions() {
                 <Text style={ui.medicationDetailText}>Dosage: {item.dosage}</Text>
                 <Text style={ui.medicationDetailText}>Quantity: {item.quantity}</Text>
                 <Text style={ui.medicationDetailText}>Start date: {formatDate(item.refill_on)}</Text>
-                <Text style={ui.medicationDetailText}>Frequency: {formatFrequencyLabel(item.refill_schedule)}</Text>
+                <Text style={ui.medicationDetailText}>Frequency: {formatTitleCaseLabel(item.refill_schedule)}</Text>
               </View>
             ))}
             {!medicationRows.length && <Text style={ui.emptyStateText}>No medications found.</Text>}
