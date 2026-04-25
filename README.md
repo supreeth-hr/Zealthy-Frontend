@@ -87,6 +87,46 @@ npm run web
 
 ---
 
+## Testing
+
+This project uses Jest with Expo (`jest-expo`) for unit tests.
+
+### Run tests from `frontend/`
+
+```bash
+npm test
+```
+
+### Watch mode (re-run on file changes)
+
+```bash
+npm run test:watch
+```
+
+### Run tests from repo root
+
+If you are in the parent directory (`Zealthy_Frontend/`), run:
+
+```bash
+npm --prefix "./frontend" test
+```
+
+### Current pure-function test coverage
+
+- `src/utils/date.test.ts`
+- `src/utils/validation.test.ts`
+- `src/utils/format.test.ts`
+
+These suites focus on important pure utility logic (date handling, validation, formatting) and include happy-path and edge/invalid input cases.
+
+### Add new pure utility tests
+
+- Place new tests next to the utility module as `*.test.ts` (for example: `src/utils/myUtil.test.ts`).
+- Prefer deterministic assertions for date/time and locale-sensitive output.
+- Keep tests behavior-focused: input -> output, without coupling to implementation details.
+
+---
+
 ## App Structure
 
 ### Routing (`app/`)
